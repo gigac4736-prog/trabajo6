@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sector Secundario - Mapa Conceptual Global</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* --- ESTILOS GENERALES DEL MAPA --- */
+        
+        /* Estilo base para el scrollbar en navegadores WebKit */
+        ::-webkit-scrollbar {
+            height: 8px; /* Para scroll horizontal */
+            width: 8px; /* Para scroll vertical */
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827; /* gray-900 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4B5563; /* gray-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6B7280; /* gray-500 */
+        }
+
+        /* Estilo para los puntos de la lista en los bloques de contenido */
+        .bullet-point::before {
+            content: '•';
+            color: #38BDF8; /* Sky-400 */
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+        .bullet-point {
+            padding-left: 1em;
+        }
+
+        /* ------------------------------------------------------------------ */
+        /* --- ESTILOS PARA EL DIAGRAMA DE ÁRBOL CLÁSICO (AJUSTADO) --- */
+        /* ------------------------------------------------------------------ */
+
+        /* Color y grosor de línea sutil */
+        .line-color {
+            background-color: #38BDF8; /* Sky-400 */
+        }
+        .line-width {
+            width: 2px; 
+            height: 1000px;
+        }
+
+        /* Contenedor principal del árbol, solo gestiona el scroll */
+        .horizontal-tree-wrapper {
+            overflow-x: auto;
+            padding-bottom: 20px; /* Espacio para el scrollbar */
+            width: 100%;
+        }
+        
+        /* Oculta la lista base y aplica Flexbox para centrar y distribuir */
+        .horizontal-tree ul {
+            list-style: none;
+            padding-left: 0;
+            margin-left: 0px;
+            display: flex;
+            justify-content: center; 
+            width: max-content; 
+            position: relative; 
+        }
+
+        /* Nodos individuales: cada LI es un nodo con sus hijos */
+        .horizontal-tree li {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* CAMBIO: Restaurado el padding a un margen más estrecho entre rectángulos (5px) */
+            padding: 30px 5px 0 5px; 
+        }
+
+        /* 1. Línea Vertical Descendente (Desde el Padre hacia el nivel de la rama) */
+        .horizontal-tree li::before {
+            content: '';
+            position: absolute;
+            top: 73px;
+            left: 50%;
+            width: 2px; 
+            height: 70px; /* Longitud de la línea que da espacio */
+            background-color: #38BDF8; /* Color suave */
+            transform: translateX(-50%);
+        }
+        
+        /* NUEVO: Afecta ÚNICAMENTE al nodo raíz para aumentar el margen vertical */
+        .root-node::before {
+            height: 100px; /* Línea más larga para separar más */
+            top: 60px;      /* Comienza antes */
+        }
+
+        /* Oculta la línea vertical del nodo raíz */
+        .root-node > .tree-node::before {
+            content: block !important;
+        }
+
+        /* ---------------------------------------------------- */
+        /* --- ESTILOS ESPECÍFICOS PARA LOS HIJOS (Árbol Clásico) --- */
+        /* ---------------------------------------------------- */
+
+        /* 2. Línea Vertical Ascendente del HIJO (desde la barra horizontal al nodo) */
+        .horizontal-tree li > ul > li::before {
+            content: '';
+            position: absolute;
+            top: 12px; /* Nivel de conexión */
+            left: 50%;
+            width: 2px; 
+            height: 18px; /* 30px - 12px = 18px de subida al nodo */
+            background-color: #38BDF8;
+            transform: translateX(-50%);
+        }
+
+        /* 3. Conector Horizontal (El que une a los hermanos) */
+        .horizontal-tree li > ul > li::after {
+            content: '';
+            position: absolute;
+            top: 12px; /* Nivel de conexión */
+            left: 0;
+            width: 100%;
+            height: 2px; 
+            background-color: #38BDF8;
+        }
+
+        /* Excepción 1: Primer hijo (la línea horizontal solo debe ir a la derecha de su centro) */
+        .horizontal-tree li > ul > li:first-child::after {
+            left: 50%;
+            width: 50%; 
+        }
+
+        /* Excepción 2: Último hijo (la línea horizontal solo debe ir a la izquierda de su centro) */
+        .horizontal-tree li > ul > li:last-child::after {
+            left: 0;
+            width: 50%; 
+        }
+
+        /* Excepción 3: Si solo hay un hijo (no hay hermanos con los que conectarse horizontalmente) */
+        .horizontal-tree li > ul > li:only-child::after {
+            content: none;
+        }
+        
+        /* NODO DE TÍTULO: La caja principal (RESTAURO a tamaño adaptable, no fijo) */
+        .node-title {
+            z-index: 10; 
+            background-color: #1F2937; /* gray-800 */
+            border-radius: 0.5rem;
+            width: 160px; 
+            text-align: center;
+            transition: all 0.2s ease-in-out;
+            /* RESTAURADO: padding y altura por defecto (más grande que antes) */
+            padding: 0.5rem; 
+            height: 75px 
+        }
+        
+        /* Estilo especial para el nodo raíz principal (h0) - AFECTA SOLO AL DE ARRIBA */
+        .h1-node.node-title { /* <<< CORRECCIÓN: Se usa el selector combinado sin el '>' */
+            background-color: #0F172A; /* slate-900 */
+            border: 4px solid #38BDF8; /* Sky-400 */
+            /* *** CAMBIO REALIZADO AQUI *** */
+            min-width: 300px; /* Lo hace más largo/ancho que los 120px de los nodos hijos */
+            height: 5rem; 
+            padding: 0.5rem 1rem;
+        }
+
+        /* Ajuste visual para el nodo principal (h2) de cada rama */
+        .h2-node > .node-title {
+            border-bottom: 3px solid #38BDF8; /* Sky-400 */
+            padding-bottom: 0.2rem; 
+        }
+        
+        /* Estilo para nodos clickeables (el "original") */
+        .node-title.cursor-pointer:hover {
+            background-color: #374151; /* gray-700 */
+            border-color: #60A5FA; /* Blue-400 */
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.7);
+        }
+
+        /* ---------------------------------------------------- */
+        /* --- ESTILOS ESPECÍFICOS DEL JUEGO (NETRUNNER CRASH) --- */
+        /* ---------------------------------------------------- */
+
+        /* Variables de color Cyberpunk */
+        :root {
+            --bg-dark: #0a0015;
+            --primary-neon: #00fff7; /* Cyan */
+            --secondary-neon: #ff00ff; /* Magenta */
+            --danger-red: #ff3366;
+            --accent-green: #39ff14;
+        }
+
+        /* Estilo de fondo y fuente para el juego */
+        .netrunner-bg {
+            font-family: 'Orbitron', sans-serif !important;
+            background: radial-gradient(circle at 10% 10%, #1a0028 0%, #000000 80%) !important;
+            color: var(--primary-neon) !important;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            transition: background-color 0.1s;
+        }
+
+        /* Efecto de vibración (shake) en el body */
+        .netrunner-bg.shake-hard {
+            animation: shake 0.2s infinite; 
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            25% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+            50% { transform: translate(-3px, 0px) rotate(0.5deg); }
+            75% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -1px) rotate(-0.5deg); }
+        }
+
+        /* Título Glitch */
+        .netrunner-bg h1 {
+            font-size: 2.5em;
+            text-align: center;
+            color: var(--secondary-neon);
+            text-shadow: 
+                0 0 5px var(--secondary-neon), 
+                0 0 10px var(--primary-neon),
+                0 0 20px var(--secondary-neon);
+            margin-bottom: 20px;
+        }
+        
+        /* Contenedor principal y responsive */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            width: 95%;
+            max-width: 1200px;
+            gap: 20px;
+        }
+
+        @media (min-width: 900px) {
+            .game-container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+        
+        /* Panel de Control (Izquierda/Arriba) */
+        .controls-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--secondary-neon);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px var(--secondary-neon);
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 350px;
+            order: 2; /* En móvil va debajo de la gráfica */
+        }
+        
+        @media (min-width: 900px) {
+            .controls-panel {
+                order: 1; /* En desktop va a la izquierda */
+            }
+        }
+
+        .balance-display, .status-message {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px dashed var(--primary-neon);
+            border-radius: 5px;
+            background: rgba(0, 255, 247, 0.05);
+            font-weight: bold;
+            font-size: 1.1em;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .status-message.win { color: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
+        .status-message.lose { color: var(--danger-red); border-color: var(--danger-red); box-shadow: 0 0 10px var(--danger-red); }
+
+        /* Inputs y Botones */
+        input[type="number"], input[type="text"], .game-button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        input[type="number"], input[type="text"] {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--primary-neon);
+            border: 2px solid var(--primary-neon);
+            box-shadow: 0 0 8px rgba(0, 255, 247, 0.5);
+        }
+        
+        .name-input-group {
+            margin-bottom: 20px;
+        }
+        .name-input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+
+        .game-button {
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .btn-bet {
+            background: var(--primary-neon);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--primary-neon);
+        }
+
+        .btn-retire {
+            background: var(--accent-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-green);
+        }
+
+        .btn-bet:disabled, .btn-retire:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Gráfica y Animación */
+        .chart-panel {
+            flex-grow: 1;
+            order: 1; 
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--primary-neon);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 0 20px var(--primary-neon);
+            min-height: 450px; 
+            position: relative;
+        }
+        
+        @media (min-width: 900px) {
+            .chart-panel {
+                order: 2; 
+            }
+        }
+
+        /* Ajustes de tamaño del canvas */
+        .chart-panel canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 430px; 
+        }
+
+        #multiplier-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5em; 
+            font-weight: 700;
+            color: var(--accent-green);
+            text-shadow: 0 0 15px var(--accent-green);
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s, font-size 0.2s;
+        }
+        
+        #multiplier-display.active {
+            opacity: 1;
+            animation: pulse-neon 1s infinite alternate;
+        }
+
+        #multiplier-display.fast-grow {
+            font-size: 6.5em; 
+        }
+
+        #multiplier-display.adrenalin-pulse {
+            animation: pulse-adrenalin 0.5s infinite alternate;
+            color: white; 
+            text-shadow: 0 0 20px white, 0 0 35px var(--accent-green);
+        }
+
+        @keyframes pulse-adrenalin {
+            0% { text-shadow: 0 0 10px white, 0 0 20px var(--accent-green); }
+            100% { text-shadow: 0 0 30px white, 0 0 50px var(--accent-green), 0 0 80px var(--accent-green); }
+        }
+        
+        #multiplier-display.crashed {
+            color: var(--danger-red);
+            text-shadow: 0 0 15px var(--danger-red);
+            animation: glitch-text 0.1s infinite;
+        }
+        
+        @keyframes pulse-neon {
+            0% { text-shadow: 0 0 10px var(--accent-green); }
+            100% { text-shadow: 0 0 25px var(--accent-green), 0 0 40px rgba(57, 255, 20, 0.5); }
+        }
+
+        @keyframes glitch-text {
+            0% { transform: translate(-50%, -50%) skewX(0.5deg); opacity: 0.8; }
+            50% { transform: translate(-50.5%, -50%) skewX(-0.5deg); opacity: 1; }
+            100% { transform: translate(-50%, -50.5%) skewX(0.5deg); opacity: 0.8; }
+        }
+
+        .chart-panel canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 330px;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--secondary-neon);
+            font-size: 1.5em;
+        }
+        
+        /* Iconos de neón */
+        .netrunner-bg [data-lucide] {
+            stroke: currentColor;
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
+
+    <header class="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 shadow-lg">
+        <div class="px-4 py-3 flex flex-col sm:flex-row justify-between items-center">
+            <h1 class="text-2xl font-extrabold text-white mb-2 sm:mb-0">Geografía Económica</h1>
+            <div id="nav-buttons" class="flex space-x-2 sm:space-x-4">
+                </div>
+        </div>
+    </header>
+
+    <main class="w-full">
+        <div id="app-content">
+            <div class="text-center p-16 max-w-4xl mx-auto">Cargando...</div>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. DATOS DEL QUIZ (20 Preguntas) ---
+        const quizData = [
+            {
+                question: "¿Cuál es el objetivo principal de todas las actividades incluidas en el Sector Secundario?",
+                options: [
+                    "La provisión de servicios intangibles y financieros.",
+                    "La transformación de materias primas en productos elaborados o semielaborados.",
+                    "La extracción directa de recursos naturales del medio ambiente.",
+                    "El desarrollo de la investigación pura y fundamental."
+                ],
+                correctIndex: 1 
+            },
+            {
+                question: "¿Qué tipo de industria transforma materias primas en productos semielaborados (acero, cemento) y requiere alto capital fijo?",
+                options: [
+                    "Industria de Consumo o Ligera",
+                    "Industria de Alta Tecnología",
+                    "Industria Pesada o de Base",
+                    "Industria Textil"
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "¿Qué ejemplo pertenece a la Industria Ligera (o de Consumo)?",
+                options: [
+                    "Barras de aluminio y productos petroquímicos.",
+                    "Maquinaria pesada para la minería.",
+                    "Turbinas de viento y generadores eléctricos.",
+                    "Alimentos procesados y calzado."
+                ],
+                correctIndex: 3
+            },
+            {
+                question: "¿Qué categoría industrial es considerada el motor de la modernización debido a su alta inversión en I+D (Investigación y Desarrollo) y a la producción de maquinaria para otras fábricas?",
+                options: [
+                    "Industria Extractiva",
+                    "Industria de Bienes de Equipo",
+                    "Industria Ligera",
+                    "Industria Base"
+                ],
+                correctIndex: 1
+            },
+            {
+                question: "¿Cuál es la fuente de energía no renovable que sigue siendo la más contaminante y ha sido el motor histórico de las primeras revoluciones industriales?",
+                options: [
+                    "Petróleo",
+                    "Gas Natural",
+                    "Carbón",
+                    "Uranio (Nuclear)"
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "El principal desafío tecnológico y logístico para la expansión masiva de las energías eólica y solar es...",
+                options: [
+                    "Su alto coste inicial de las materias primas como el grafito.",
+                    "La limitada disponibilidad de sol y viento en el planeta.",
+                    "La intermitencia y la necesidad de sistemas eficientes de almacenamiento (baterías).",
+                    "La dependencia de grandes centrales térmicas de apoyo."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "¿Cuál es el principal riesgo asociado a la energía nuclear en términos de seguridad y gestión?",
+                options: [
+                    "La contaminación atmosférica por la combustión de combustible.",
+                    "El riesgo de colapso de presas y daños ecológicos en cuencas fluviales.",
+                    "La generación de residuos radiactivos de larga vida y el riesgo de accidentes graves.",
+                    "La dependencia del sol y el viento para su funcionamiento."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "En el contexto de la Geopolítica Industrial, ¿qué factor suministra principalmente el Sur Global a las multinacionales del Norte Global?",
+                options: [
+                    "Innovación tecnológica y control de patentes.",
+                    "Mano de obra barata y acceso a materias primas.",
+                    "Grandes mercados de consumo de alto poder adquisitivo.",
+                    "Regulación ambiental estricta."
+                ],
+                correctIndex: 1
+            },
+            {
+                question: "¿Cuál es una consecuencia socioeconómica habitual de la deslocalización industrial para el país que recibe la producción (país receptor)?",
+                options: [
+                    "Aumento del empleo precario y fuerte dependencia de la inversión extranjera.",
+                    "Desarrollo de nuevas sedes centrales y centros de decisión.",
+                    "Sustitución de la dependencia de materias primas por exportaciones de alta tecnología.",
+                    "Fortalecimiento de la regulación ambiental local."
+                ],
+                correctIndex: 0
+            },
+            {
+                question: "El término **Obsolescencia Programada** se relaciona directamente con...",
+                options: [
+                    "La transición energética hacia fuentes renovables.",
+                    "La producción en masa del Fordismo y el uso de la electricidad.",
+                    "La planificación del diseño de un producto para que se vuelva inútil o deje de funcionar en un tiempo determinado.",
+                    "El traslado de fábricas a países con regulaciones ambientales más laxas."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "¿Qué tecnología o fuente de energía definió la **Primera Revolución Industrial** a finales del siglo XVIII?",
+                options: [
+                    "La computadora personal y el internet.",
+                    "La electricidad y la cadena de montaje.",
+                    "El vapor (a través de la máquina de vapor) y la mecanización.",
+                    "La inteligencia artificial y el Big Data."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "La **Segunda Revolución Industrial** (finales del S. XIX) introdujo la electricidad y un sistema de producción en masa conocido como...",
+                options: [
+                    "El Adam Smithismo",
+                    "El Taylorismo o producción artesanal",
+                    "El Fordismo o producción en cadena",
+                    "La Tercerización"
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "¿Cuál de los siguientes sistemas es un componente clave y habilitador de la **Industria 4.0** (Sistemas Ciber-Físicos)?",
+                options: [
+                    "Uso exclusivo de la energía nuclear.",
+                    "La máquina de vapor de alta presión.",
+                    "Internet de las Cosas (IoT) y la Inteligencia Artificial (IA).",
+                    "La producción en cadena de montaje lineal."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "A diferencia del Sur Global, el Norte Global mantiene el control de la cadena de valor industrial principalmente a través de...",
+                options: [
+                    "La exportación de combustibles fósiles.",
+                    "El control de la Investigación y Desarrollo (I+D) y las sedes centrales de las multinacionales.",
+                    "El suministro de mano de obra abundante y barata.",
+                    "La producción masiva de bienes de consumo a bajo costo."
+                ],
+                correctIndex: 1
+            },
+            {
+                question: "¿Qué término geopolítico se aplica a la situación de gran poder e influencia que tienen los países productores de petróleo y gas natural sobre la economía global?",
+                options: [
+                    "Intermitencia Energética",
+                    "Dependencia Fósil",
+                    "Externalidades Positivas",
+                    "Deslocalización de Capital"
+                ],
+                correctIndex: 1
+            },
+            {
+                question: "La característica principal que diferencia a la Industria Ligera de la Pesada es que la primera está más orientada a la...",
+                options: [
+                    "Proximidad a las fuentes de energía y materias primas.",
+                    "Producción de productos básicos de alto volumen y bajo valor añadido.",
+                    "Producción de bienes de consumo directo que satisfacen la demanda del mercado final.",
+                    "Inversión intensiva en I+D y bienes de capital."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "¿Qué mide la **Huella de Carbono** de la industria?",
+                options: [
+                    "El volumen de agua contaminada vertido en los ríos.",
+                    "La superficie de terreno utilizada para el desarrollo industrial.",
+                    "El total de Gases de Efecto Invernadero (GEI) emitidos directa o indirectamente por la producción de un bien o servicio.",
+                    "La velocidad a la que un producto se vuelve obsoleto."
+                ],
+                correctIndex: 2
+            },
+            {
+                question: "La **Tercera Revolución Industrial** (década de 1970) se centró principalmente en la introducción de la...",
+                options: [
+                    "Biomasa como fuente principal de calor industrial.",
+                    "Informática, los Sistemas Electrónicos y la Automatización simple de procesos.",
+                    "Máquina de vapor.",
+                    "Producción en cadena (Fordismo)."
+                ],
+                correctIndex: 1
+            },
+            {
+                question: "El principal beneficio productivo de la Industria 4.0, habilitado por la conexión constante de sistemas, es la capacidad de lograr la...",
+                options: [
+                    "Estandarización máxima de todos los productos (Uniformidad).",
+                    "Personalización Masiva (producir bienes únicos a escala).",
+                    "Dependencia total del trabajo manual (artesanía).",
+                    "Deslocalización a países con mano de obra cualificada."
+                ],
+                correctIndex: 1
+            },
+            {
+                question: "¿Qué es el 'Just-in-Time' (JIT) en la Industria Ligera?",
+                options: [
+                    "Un sistema de pago de salarios por rendimiento.",
+                    "Un proceso de producción que minimiza el inventario y maximiza la velocidad de respuesta a la demanda.",
+                    "La política de garantizar el suministro de energía sin interrupciones.",
+                    "El diseño de productos con obsolescencia programada."
+                ],
+                correctIndex: 1
+            }
+        ];
+        
+        // --- ESTRUCTURA GLOBAL DEL MAPA (CON CONTENIDO AMPLIADO) ---
+        const globalStructure = {
+    id: 'global_root',
+    title: 'SECTOR SECUNDARIO: MAPA CONCEPTUAL',
+    color: 'border-sky-400',
+    hLevel: 'h0', // Nivel para el nodo raíz principal
+    content: `
+        <div class="mb-8 p-4 bg-sky-700/30 rounded-lg border-2 border-sky-500 shadow-2xl">
+            <h3 class="text-xl font-extrabold text-white mb-2 flex items-center">
+                <i data-lucide="building-2" class="w-5 h-5 mr-2 text-sky-400"></i> DEFINICIÓN FUNDAMENTAL
+            </h3>
+            <p class="text-lg font-medium text-gray-100">
+                El <strong class="text-sky-300">Sector Secundario</strong> abarca todas las actividades económicas dedicadas a la <strong class="text-sky-300">transformación de materias primas</strong> extraídas por el Sector Primario en <strong class="text-sky-300">productos manufacturados</strong> o semielaborados.
+            </p>
+            <p class="text-sm text-gray-400 mt-3 border-t border-sky-600 pt-2">
+                Conexión Clave: El producto final de este sector alimenta directamente al consumidor (Industria Ligera) o al <strong class="text-sky-300">Sector Terciario</strong> (maquinaria, infraestructuras).
+            </p>
+        </div>
+    `,
+    children: [
+        {
+            id: 'clasificacion',
+            title: '🏭 CLASIFICACIÓN INDUSTRIAL',
+            color: 'border-sky-500',
+            hLevel: 'h2',
+            content: `
+                <div class="mb-8 p-4 bg-sky-900/20 border-l-4 border-sky-400 rounded-lg">
+                    <h3 class="text-2xl font-bold text-sky-400 flex items-center mb-2"><i data-lucide="building" class="w-6 h-6 mr-2"></i> CLASIFICACIÓN INDUSTRIAL MODERNA</h3>
+                    <p class="text-gray-300 italic mb-3">La industria se clasifica primordialmente según el destino del producto y la intensidad tecnológica y de capital requerida.</p>
+                    <ul class="space-y-1 text-sm">
+                        <li class="bullet-point">Criterio Base: Destino Final (Insumo vs. Consumo).</li>
+                        <li class="bullet-point">Factor Crítico: Inversión de Capital y Nivel de I+D (Investigación y Desarrollo).</li>
+                        <li class="bullet-point">Tendencia: Desplazamiento de la producción masiva a países en desarrollo.</li>
+                        <li class="bullet-point text-sky-400">Especialización Espacial: Frecuente formación de Polos Industriales o 'clusters' (p. ej., el Silicon Valley original para la electrónica), donde la cercanía facilita la transferencia de conocimiento.</li>
+                    </ul>
+                </div>
+            `,
+            children: [
+                {
+                    id: 'pesada',
+                    title: '1. Industria Pesada (Base)',
+                    color: 'border-sky-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400> Definición: Transforma materias primas en productos semielaborados (p. ej., barras de metal, productos químicos) esenciales para el resto de la cadena industrial.</p><ul class="space-y-1 text-sm"><li class="bullet-point text-green-400">Productos Típicos: Acero, Cementos especiales, Alúmina, Cloro.</li><li class="bullet-point">Requerimientos: Uso intensivo de energía (electrolisis, hornos), enormes instalaciones y procesos continuos. Alto Capital Fijo.</li><li class="bullet-point">Ubicación: Históricamente cerca de minas/carbón. Hoy, cerca de puertos o fuentes energéticas baratas (p. ej., hidroeléctricas).</li><li class="bullet-point text-red-400">Impacto Ambiental: Debido a la combustión y los procesos químicos, es el sector con mayor huella de carbono y de residuos tóxicos por unidad producida. Depende de las Economías de Escala (producir mucho para bajar el coste unitario).</li></ul></div>`
+                },
+                {
+                    id: 'bienes_equipo',
+                    title: '2. Industria de Bienes de Equipo',
+                    color: 'border-sky-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400">Definición: Fabrica el instrumental y la infraestructura productiva (maquinaria, herramientas de precisión) necesaria para equipar otras fábricas.</p><ul class="space-y-1 text-sm"><li class="bullet-point text-green-400">Productos Típicos: Turbinas, Chips de control industrial, Máquinas CNC, Líneas de montaje automatizadas.</li><li class="bullet-point">Especialización: Requiere la mayor inversión en I+D (Investigación y Desarrollo) y personal altamente cualificado (ingenieros y técnicos). Es intensiva en capital, no en mano de obra.</li><li class="bullet-point">Impacto: Es el motor de la modernización. Su rendimiento define la eficiencia tecnológica de un país.</li><li class="bullet-point text-sky-400">Subsector Clave: Incluye la Industria de Alta Tecnología (High-Tech), que se basa en la innovación constante y tiene una baja huella física, ubicándose a menudo en parques científicos.</li></ul></div>`
+                },
+                {
+                    id: 'ligera',
+                    title: '3. Industria Ligera (Consumo)',
+                    color: 'border-sky-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400">Definición: Genera bienes acabados y de uso directo, caracterizada por procesos flexibles que responden rápidamente a la demanda del mercado.</p><ul class="space-y-1 text-sm"><li class="bullet-point text-green-400">Productos Típicos: Textil, Calzado, Alimentos procesados, Electrónica (smartphones, electrodomésticos).</li><li class="bullet-point">Requerimientos: Más dependiente de la Mano de Obra (aunque cada vez más automatizada) y de la logística de distribución.</li><li class="bullet-point">Ubicación: Típicamente cerca de grandes centros de consumo o en países con bajos salarios (por la deslocalización).</li><li class="bullet-point text-sky-400">Sistema Logístico: Utiliza modelos como el Just-in-Time (JIT) para minimizar el almacenamiento y los costes de inventario, dependiendo críticamente de cadenas de suministro globales fluidas.</li></ul></div>`
+                }
+            ]
+        },
+        {
+            id: 'energia_base',
+            title: '⚡ FUENTES DE ENERGÍA',
+            color: 'border-yellow-500',
+            hLevel: 'h2',
+            content: `
+                <div class="mb-8 p-4 bg-yellow-900/20 border-l-4 border-yellow-400 rounded-lg">
+                    <h3 class="text-2xl font-bold text-yellow-400 flex items-center mb-2"><i data-lucide="battery-charging" class="w-6 h-6 mr-2"></i> LA MATRIZ ENERGÉTICA GLOBAL</h3>
+                    <p class="text-gray-300 italic mb-3">El consumo energético está directamente correlacionado con el nivel de industrialización y desarrollo de un país.</p>
+                    <ul class="space-y-1 text-sm">
+                        <li class="bullet-point">Dependencia Fósil: A pesar del auge renovable, el mundo sigue dependiendo en gran medida del petróleo y el gas.</li>
+                        <li class="bullet-point">Geopolítica: Los países productores de petróleo (OPEP) tienen un enorme poder e influencia global.</li>
+                        <li class="bullet-point">Transición: El desafío es asegurar el suministro para el crecimiento industrial mientras se descarboniza la economía.</li>
+                    </ul>
+                </div>
+            `,
+            children: [
+                {
+                    id: 'no_renovables',
+                    title: '1. Fuentes No Renovables',
+                    color: 'border-yellow-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400">Fuentes cuya velocidad de consumo supera la velocidad de su regeneración natural. Lideran la emisión de gases de efecto invernadero (GEI).</p><ul class="space-y-1 text-sm"><li class="bullet-point text-red-400">Carbón: Histórico motor de la I.R. Más contaminante, pero sigue siendo clave en países como China e India.</li><li class="bullet-point text-red-400">Petróleo y Gas: Dominan el transporte y la industria química. Su volatilidad de precio afecta a toda la economía mundial. La técnica de Fracking (fracturación hidráulica) ha disparado la producción, pero a un alto coste ambiental (contaminación de acuíferos).</li><li class="bullet-point text-red-400">Nuclear: Controversial. Bajas emisiones de CO2 pero alto riesgo de accidentes y gestión de residuos radiactivos a largo plazo.</li></ul></div>`
+                },
+                {
+                    id: 'renovables',
+                    title: '2. Fuentes Renovables',
+                    color: 'border-yellow-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400">Alternativas esenciales para un futuro sostenible. Su desafío principal es la estabilidad de la red (intermitencia).</p><ul class="space-y-1 text-sm"><li class="bullet-point text-green-400">Eólica y Solar: Lideran el crecimiento. Dependen de avances en sistemas de almacenamiento (baterías de Litio/Vanadio).</li><li class="bullet-point text-green-400">Hidráulica: Fuente estable y madura, pero limitada geográficamente y con impactos ambientales locales (represas).</li><li class="bullet-point text-green-400">Biomasa y Geotérmica: Usos más localizados. Aprovechan residuos orgánicos o el calor interno de la Tierra, respectivamente.</li><li class="bullet-point text-green-400">Energía Marina (Undimotriz/Marea): Aún en fase de desarrollo, aprovecha la fuerza de las olas o las mareas. Ofrece alta predictibilidad en comparación con la eólica o solar.</li></ul></div>`
+                }
+            ]
+        },
+        {
+            id: 'geopolitica',
+            title: '🌎 GEOPOLÍTICA E IMPACTO',
+            color: 'border-red-500',
+            hLevel: 'h2',
+            content: `
+                <div class="mb-8 p-4 bg-red-900/20 border-l-4 border-red-400 rounded-lg">
+                    <h3 class="text-2xl font-bold text-red-400 flex items-center mb-2"><i data-lucide="banknote" class="w-6 h-6 mr-2"></i> CONCENTRACIÓN DE PODER Y EL EJE NORTE-SUR</h3>
+                    <p class="text-gray-300 italic mb-3">La distribución de la producción industrial consolida la división global: el Norte controla el capital y la tecnología; el Sur, la mano de obra y los recursos.</p>
+                    <ul class="space-y-1 text-sm">
+                        <li class="bullet-point">Norte Global (Ricos): Controlan la Innovación (I+D), la financiación, las patentes y las sedes centrales de las multinacionales.</li>
+                        <li class="bullet-point">Sur Global (Pobres): Suministran la Mano de Obra Barata, las materias primas y son los lugares de ensamblaje (la "fábrica" del mundo).</li>
+                        <li class="bullet-point">Resultado: Flujo de riqueza constante del Sur al Norte a través de los beneficios empresariales.</li>
+                        <li class="bullet-point text-green-400">Contratendencia: El movimiento de Comercio Justo busca pagar precios equitativos que permitan a los productores del Sur (especialmente agrícola, pero también artesanal e industrial ligero) cubrir sus costes y tener un margen sostenible.</li>
+                    </ul>
+                </div>
+            `,
+            children: [
+                {
+                    id: 'deslocalizacion',
+                    title: '1. Deslocalización y Multinacionales',
+                    color: 'border-red-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400">Proceso: El traslado estratégico de procesos productivos (no de sedes) desde países desarrollados a países periféricos para reducir costes. </p><ul class="space-y-1 text-sm"><li class="bullet-point">Factores de Atracción: Salarios mínimos, baja presión fiscal, legislación ambiental y laboral laxa (o inexistente). Esto provoca una "Carrera a la Baja" ("Race to the Bottom") entre países en desarrollo para ofrecer las peores condiciones a cambio de inversión.</li><li class="bullet-point">Estrategia: Creación de Zonas Francas o Maquiladoras (en América Latina), áreas delimitadas donde las empresas extranjeras operan sin pagar impuestos de importación o exportación, y con mínimas regulaciones laborales.</li><li class="bullet-point">Consecuencia (País Receptor): Creación de empleo precario, explotación laboral y fuerte dependencia de la empresa extranjera.</li><li class="bullet-point">Consecuencia (País Emisor): Desindustrialización, aumento del paro en la industria y "tercerización" (dominio del sector servicios).</li></ul></div>`
+                },
+                {
+                    id: 'impacto_amb',
+                    title: '2. Impacto Ambiental: Deuda Ecológica',
+                    color: 'border-red-500',
+                    hLevel: 'h4',
+                    content: `<div class="bg-gray-800 p-4 rounded-lg shadow-xl"><p class="mb-3 text-sm text-gray-400">La producción industrial a gran escala exige un ritmo de consumo de recursos que la biosfera no puede sostener (sobreexplotación).</p><ul class="space-y-1 text-sm"><li class="bullet-point">Huella de Carbono: Emisiones directas de las fábricas, agravadas por el transporte global de productos (logística).</li><li class="bullet-point">Consumo de Recursos: Agotamiento de minerales clave y sobreexplotación de agua dulce en procesos industriales intensivos.</li><li class="bullet-point">Contaminación Hídrica: Vertidos tóxicos de la industria química o textil en países con controles débiles.</li><li class="bullet-point">Obsolescencia Programada: Estrategia de diseño para que los productos duren poco, forzando un ciclo de consumo y producción incesante. Esto genera Residuos Electrónicos (E-waste), altamente tóxicos y difíciles de reciclar.</li></ul></div>`
+                }
+            ]
+        },
+        {
+            id: 'historia',
+            title: '🕰️ EVOLUCIÓN (4 Revoluciones)',
+            color: 'border-purple-500',
+            hLevel: 'h2',
+            content: `
+                <h4 class="text-xl font-semibold text-gray-200 mt-6 mb-2">El Camino a la Fábrica Inteligente</h4>
+                <div class="bg-gray-800 p-4 rounded-lg shadow-xl">
+                    <p class="mb-3 text-sm text-gray-400">La industria ha pasado por cuatro grandes transformaciones, cada una marcada por una nueva fuente de energía o tecnología dominante.</p>
+                    <ul class="space-y-1 text-sm">
+                        <li class="bullet-point text-purple-400">I.R. 1.0 (Finales S. XVIII): Máquina de vapor. Mecanización textil y ferroviaria.</li>
+                        <li class="bullet-point text-purple-400">I.R. 2.0 (Finales S. XIX): Electricidad, petróleo. Producción en cadena (Taylorismo/Fordismo) y estandarización.</li>
+                        <li class="bullet-point text-purple-400">I.R. 3.0 (Década de 1970): Electrónica, Informática. Automatización simple (PLCs) y robots básicos. Se descentraliza la producción.</li>
+                    </ul>
+                </div>
+
+                <h4 class="text-xl font-semibold text-gray-200 mt-6 mb-2">La Industria 4.0: Ciber-Física</h4>
+                <div class="bg-gray-800 p-4 rounded-lg shadow-xl">
+                    <p class="mb-3 text-sm text-gray-400">La cuarta revolución industrial une el mundo físico con el digital a través de sistemas ciber-físicos, permitiendo fábricas totalmente autónomas y adaptativas.</p>
+                    <ul class="space-y-1 text-sm">
+                        <li class="bullet-point text-purple-400">Sistemas Clave: IoT (sensores en toda la cadena), Big Data (análisis masivo) e Inteligencia Artificial (toma de decisiones).</li>
+                        <li class="bullet-point">Personalización Masiva: La fábrica puede producir bienes únicos a la misma velocidad que produce masivamente (lote de tamaño uno).</li>
+                        <li class="bullet-point text-red-400">Desafío Social: El aumento de la automatización genera un miedo real a la pérdida de empleos no cualificados, exigiendo una reestructuración de la fuerza laboral y un énfasis en las habilidades de programación y mantenimiento de sistemas complejos.</li>
+                    </ul>
+                </div>
+            `,
+            children: []
+        }
+    ]
+};
+       
+
+        // --- 2. ESTADO GLOBAL, MAPA Y UTILIDADES ---
+        
+        // Función recursiva para encontrar un nodo por ID
+        function findNodeById(id, node) {
+            if (node.id === id) {
+                return node;
+            }
+            if (node.children) {
+                for (const child of node.children) {
+                    const found = findNodeById(id, child);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        // 2.1. Estado de la Aplicación
+        const state = {
+            currentView: 'trabajo', // <-- El mapa carga directamente
+            detailId: null, // <-- ID del nodo para el detalle
+            currentQuestionIndex: 0,
+            quizCompleted: false,
+            playerScores: {}, 
+            feedbackMessage: null 
+        };
+
+        // 2.2. Datos del juego Netrunner Crash
+        const currentGameData = {
+            gameState: 'idle', // 'idle', 'running', 'crashed', 'cashed_out'
+            userBet: 0,
+            currentMultiplier: 1.00,
+            crashPoint: 0,
+            playerName: '',
+            animationFrameId: null,
+            animationStartTime: 0,
+            chartCanvas: null,
+            ctx: null,
+            multiplierDisplay: null,
+            statusDisplay: null,
+            btnStart: null,
+            btnCashout: null,
+            cashoutMultiplierSpan: null,
+            // Configuración del gráfico (AJUSTADO)
+            CHART_WIDTH: 700, 
+            CHART_HEIGHT: 400, 
+            CHART_PADDING: 40,
+            MAX_CHART_MULTIPLIER: 10, 
+        };
+
+        // 2.3. Elemento principal del DOM
+        const appContentDiv = document.getElementById('app-content');
+        
+        // 2.4. Utilidades de Puntuación
+        
+        /**
+         * Obtiene la puntuación de un jugador (seguro).
+         */
+        function getPlayerScore(playerName) {
+            if (!playerName) return 0;
+            const normalizedName = playerName.toLowerCase();
+            return state.playerScores[normalizedName] || 0;
+        }
+
+        /**
+         * Actualiza el display del saldo.
+         */
+        function updateBalanceDisplay(playerName) {
+            const balanceDisplay = document.getElementById('balance-display');
+            if (balanceDisplay) {
+                const balance = getPlayerScore(playerName);
+                balanceDisplay.textContent = `SALDO DISPONIBLE: ${balance} 💰`;
+            }
+        }
+
+        // --- 3. FUNCIONES DEL JUEGO NETRUNNER CRASH ---
+
+        /**
+         * Genera un punto de crash aleatorio (Multiplicador).
+         * NERFEO IMPLEMENTADO: 70% de probabilidad de crash muy bajo.
+         */
+        function generateCrashPoint() {
+            let p = Math.random();
+            let crash;
+
+            // 70% de las veces: CRASH MUY BAJO (1.05x - 2.0x)
+            if (p < 0.70) { 
+                crash = 1.05 + (Math.random() * 0.95); // Entre 1.05x y 2.00x
+            } 
+            // 20% de las veces: CRASH MEDIO (2.0x - 5.0x)
+            else if (p < 0.90) {
+                crash = 2.00 + (Math.random() * 3.00); // Entre 2.00x y 5.00x
+            } 
+            // 10% de las veces: CRASH ALTO (Por encima de 5.0x)
+            else {
+                // Distribución logarítmica con un divisor más grande (-0.20) para reducir la cola larga
+                crash = 5.0 + (Math.log(1 - Math.random()) / -0.20); 
+            }
+            
+            // Aseguramos el mínimo (1.05x) y limitamos el máximo (20.0x)
+            return Math.min(20.0, Math.max(1.05, crash)); 
+        }
+
+        /**
+         * Controla el estado de los botones (Apostar y Retirar).
+         */
+        function setButtons(state) {
+            const isRunning = state === 'running';
+            const isIdle = state === 'idle' || state === 'crashed' || state === 'cashed_out';
+
+            currentGameData.btnStart.disabled = !isIdle;
+            currentGameData.btnCashout.disabled = !isRunning; 
+
+            if (isIdle) {
+                currentGameData.btnStart.textContent = "NETRUN (Apostar)";
+                currentGameData.cashoutMultiplierSpan.textContent = '1.00x';
+            } else if (isRunning) {
+                // Durante el juego, el texto se actualiza en el bucle gameLoop
+            } else {
+                currentGameData.cashoutMultiplierSpan.textContent = '1.00x';
+            }
+        }
+
+        /**
+         * El bucle principal de la animación del juego.
+         */
+        function gameLoop(timestamp) {
+            if (!currentGameData.animationStartTime) {
+                currentGameData.animationStartTime = timestamp;
+            }
+
+            const timeElapsed = (timestamp - currentGameData.animationStartTime) / 1000;
+
+            // Fórmula de crecimiento: AJUSTADO para ser más lento al inicio (menos de 2.0x)
+            let multiplier;
+            if (timeElapsed < 0.5) {
+                multiplier = 1.00;
+            } else {
+                // Función que crece exponencialmente: x = 1 + c * t^p
+                // c=0.08, p=2.2 -> Suave, llega a 2x en ~3.5s
+                multiplier = 1.00 + 0.08 * Math.pow(timeElapsed, 2.2); 
+            }
+
+            // Verificar Crash
+            if (currentGameData.gameState === 'running' && multiplier >= currentGameData.crashPoint) {
+                handleCrash(currentGameData.crashPoint);
+                return;
+            }
+
+            currentGameData.currentMultiplier = Math.max(1.00, multiplier);
+            
+            // Actualizar la interfaz
+            const displayValue = currentGameData.currentMultiplier.toFixed(2);
+            currentGameData.multiplierDisplay.textContent = `${displayValue}x`;
+            currentGameData.multiplierDisplay.classList.add('active');
+
+            // Efectos visuales de velocidad
+            if (currentGameData.currentMultiplier > 5.00) {
+                currentGameData.multiplierDisplay.classList.add('adrenalin-pulse');
+            } else if (currentGameData.currentMultiplier > 2.00) {
+                currentGameData.multiplierDisplay.classList.add('fast-grow');
+            } else {
+                currentGameData.multiplierDisplay.classList.remove('fast-grow', 'adrenalin-pulse');
+            }
+
+            // Actualizar el botón de retiro
+            if (!currentGameData.btnCashout.disabled) {
+                currentGameData.cashoutMultiplierSpan.textContent = `${displayValue}x`;
+            }
+
+            // Dibujar la gráfica
+            drawChart(timeElapsed);
+
+            currentGameData.animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * Inicia una nueva ronda del juego.
+         */
+        function startGame() {
+            const nameInput = document.getElementById('netrunner-player-name');
+            const betInput = document.getElementById('bet-input');
+            const playerName = nameInput.value.trim();
+            const bet = parseInt(betInput.value, 10);
+            const balance = getPlayerScore(playerName);
+
+            // FIX: Si falla la validación inicial, mostramos el error y enfocamos el campo para guiar al usuario.
+            if (!playerName || !bet || bet <= 0) {
+                setStatus('¡ERROR! Introduce tu alias y una apuesta válida.', 'lose');
+                if (!playerName) {
+                    nameInput.focus();
+                } else if (!bet || bet <= 0) {
+                    betInput.focus();
+                }
+                return; 
+            }
+
+            if (balance < bet) {
+                setStatus(`Saldo insuficiente. Tienes ${balance} 💰. Necesitas ${bet} 💰.`, 'lose');
+                return;
+            }
+
+            // Si llegamos aquí, la validación fue exitosa y se iniciará el juego (habilitando el botón de Cash Out).
+            currentGameData.userBet = bet;
+            currentGameData.cashedOut = false;
+            currentGameData.currentMultiplier = 1.00;
+            currentGameData.crashPoint = generateCrashPoint();
+            currentGameData.playerName = playerName; 
+            updateBalanceDisplay(playerName); 
+
+            // Limpiar la animación anterior
+            if (currentGameData.animationFrameId) {
+                cancelAnimationFrame(currentGameData.animationFrameId);
+            }
+
+            // Restablecer el display
+            currentGameData.multiplierDisplay.textContent = '1.00x';
+            currentGameData.multiplierDisplay.classList.remove('active', 'crashed', 'fast-grow', 'adrenalin-pulse');
+            document.body.classList.remove('shake-hard'); 
+
+            // 5. Iniciar el bucle de animación
+            setButtons('running'); 
+            currentGameData.gameState = 'running';
+            setStatus('¡ÉXITO! Iniciando el Netrun... 🚀', 'win');
+            currentGameData.animationStartTime = performance.now();
+            currentGameData.animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * Retira la apuesta multiplicada.
+         */
+        function cashOut() {
+            if (currentGameData.gameState !== 'running') return;
+
+            const multiplier = currentGameData.currentMultiplier;
+            // Se calcula la ganancia total (apuesta * multiplicador) y el beneficio (ganancia - apuesta)
+            const winnings = Math.floor(currentGameData.userBet * multiplier); 
+            const profit = winnings - currentGameData.userBet;
+
+            // Actualizar el saldo: Sumar el beneficio
+            const normalizedName = currentGameData.playerName.toLowerCase();
+            const currentScore = getPlayerScore(currentGameData.playerName);
+            
+            const newScores = { ...state.playerScores };
+            newScores[normalizedName] = currentScore + profit; 
+            setState('playerScores', newScores);
+            updateBalanceDisplay(currentGameData.playerName);
+
+            // Finalizar la ronda
+            currentGameData.gameState = 'cashed_out';
+            if (currentGameData.animationFrameId) {
+                cancelAnimationFrame(currentGameData.animationFrameId);
+            }
+            
+            setButtons('cashed_out');
+            setStatus(`¡ÉXITO! Retiraste @ ${multiplier.toFixed(2)}x. Ganancia: +${profit} 💰.`, 'win');
+
+            // Mostrar el multiplicador final en grande
+            currentGameData.multiplierDisplay.textContent = `+${profit} 💰`;
+            currentGameData.multiplierDisplay.classList.remove('crashed'); 
+            currentGameData.multiplierDisplay.classList.add('active'); 
+            document.body.classList.remove('shake-hard'); 
+        }
+
+        /**
+         * Maneja el evento de crash.
+         */
+        function handleCrash(multiplier) {
+            currentGameData.gameState = 'crashed';
+            if (currentGameData.animationFrameId) {
+                cancelAnimationFrame(currentGameData.animationFrameId);
+            }
+
+            // Descontar la apuesta si el jugador no se retiró
+            const normalizedName = currentGameData.playerName.toLowerCase();
+            const currentScore = getPlayerScore(currentGameData.playerName);
+            const newScores = { ...state.playerScores };
+            // El usuario PIERDE la apuesta: la descontamos del saldo.
+            newScores[normalizedName] = Math.max(0, currentScore - currentGameData.userBet); 
+            setState('playerScores', newScores);
+            updateBalanceDisplay(currentGameData.playerName);
+
+            setButtons('crashed'); 
+
+            setStatus(`¡CRASH @ ${multiplier.toFixed(2)}x! Perdiste ${currentGameData.userBet} 💀.`, 'lose');
+            document.body.classList.add('shake-hard'); 
+            setTimeout(() => {
+                document.body.classList.remove('shake-hard');
+            }, 1000);
+
+            // Mostrar el crash
+            currentGameData.multiplierDisplay.textContent = 'CRASH!';
+            currentGameData.multiplierDisplay.classList.add('crashed');
+            currentGameData.multiplierDisplay.classList.remove('fast-grow', 'adrenalin-pulse');
+
+            // Para dibujar el punto final, calculamos el tiempo aproximado del crash
+            const timeElapsedAtCrash = Math.pow((multiplier - 1.00) / 0.08, 1 / 2.2);
+            drawChart(timeElapsedAtCrash, multiplier);
+        }
+
+        /**
+         * Actualiza el mensaje de saldo y el input de apuesta.
+         */
+        function updateBetInput() {
+            const betInput = document.getElementById('bet-input');
+            const playerName = document.getElementById('netrunner-player-name')?.value.trim() || '';
+            
+            updateBalanceDisplay(playerName);
+
+            // También actualiza la etiqueta del botón de Cash Out para que muestre la posible ganancia
+            const cashoutBtnText = document.getElementById('cashout-multiplier');
+            if (cashoutBtnText) {
+                cashoutBtnText.textContent = '1.00x';
+            }
+        }
+
+        /**
+         * Establece el mensaje de estado con estilos.
+         */
+        function setStatus(message, type) {
+            currentGameData.statusDisplay.textContent = message;
+            currentGameData.statusDisplay.className = `status-message ${type}`;
+        }
+
+        // --- 4. FUNCIONES DE DIBUJO DEL GRÁFICO ---
+
+        /**
+         * Obtiene color RGBA de una variable CSS.
+         */
+        function cssVarToRgba(cssVar) {
+            const color = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+            return color;
+        }
+
+        /**
+         * Dibuja la cuadrícula de fondo del gráfico.
+         */
+        function drawGrid() {
+            const ctx = currentGameData.ctx;
+            const canvas = currentGameData.chartCanvas;
+            const { CHART_PADDING, MAX_CHART_MULTIPLIER } = currentGameData;
+            const width = canvas.width - 2 * CHART_PADDING;
+            const height = canvas.height - 2 * CHART_PADDING;
+            const maxMultiplier = MAX_CHART_MULTIPLIER;
+
+            ctx.strokeStyle = '#00fff722'; 
+            ctx.lineWidth = 1;
+            ctx.font = '12px "Share Tech Mono"';
+            ctx.fillStyle = '#00fff7';
+
+            // Dibujar líneas horizontales (multiplicador)
+            for (let i = 0; i <= maxMultiplier; i++) {
+                const y = CHART_PADDING + height * (1 - i / maxMultiplier);
+                ctx.beginPath();
+                ctx.moveTo(CHART_PADDING, y);
+                ctx.lineTo(canvas.width - CHART_PADDING, y);
+                ctx.stroke();
+                
+                // Etiquetas de multiplicador
+                ctx.fillText(`${i}.00x`, 5, y + 5);
+            }
+
+            // Dibujar ejes principales
+            ctx.strokeStyle = '#00fff7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // Eje X (tiempo)
+            ctx.moveTo(CHART_PADDING, canvas.height - CHART_PADDING);
+            ctx.lineTo(canvas.width - CHART_PADDING, canvas.height - CHART_PADDING);
+            // Eje Y (multiplicador)
+            ctx.moveTo(CHART_PADDING, CHART_PADDING);
+            ctx.lineTo(CHART_PADDING, canvas.height - CHART_PADDING);
+            ctx.stroke();
+        }
+
+        /**
+         * Dibuja la línea de la curva de crecimiento.
+         */
+        function drawChart(timeElapsed, forcedMultiplier = null) {
+            const ctx = currentGameData.ctx;
+            const canvas = currentGameData.chartCanvas;
+            const { CHART_PADDING, MAX_CHART_MULTIPLIER } = currentGameData;
+            const maxMultiplier = MAX_CHART_MULTIPLIER; 
+            const maxTime = 10; 
+
+            // Limpiar y dibujar cuadrícula
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            const width = canvas.width - 2 * CHART_PADDING;
+            const height = canvas.height - 2 * CHART_PADDING;
+
+            // Escalas
+            const scaleX = width / maxTime;
+            const scaleY = height / maxMultiplier;
+
+            // Configurar el estilo de la línea
+            ctx.strokeStyle = cssVarToRgba('--accent-green');
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(CHART_PADDING, canvas.height - CHART_PADDING); // Punto inicial (1.00x, 0s)
+
+            let firstPoint = true;
+            const steps = 60; 
+            const finalTime = timeElapsed;
+
+            // Recalcular puntos anteriores para la curva suave
+            for (let t = 0; t <= finalTime; t += (1 / steps)) {
+                
+                let m;
+                if (t < 0.5) {
+                    m = 1.00;
+                } else {
+                    m = 1.00 + 0.08 * Math.pow(t, 2.2); 
+                }
+
+                // Aseguramos que el gráfico no suba más de MAX_CHART_MULTIPLIER
+                const visualM = Math.min(m, maxMultiplier);
+                
+                const x = CHART_PADDING + t * scaleX;
+                const y = CHART_PADDING + height - (visualM * scaleY);
+
+                if (firstPoint) {
+                    ctx.moveTo(x, y);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            // Dibujar el punto final (actual o de crash)
+            const finalM = forcedMultiplier || currentGameData.currentMultiplier;
+            const finalVisualM = Math.min(finalM, maxMultiplier);
+            const finalX = CHART_PADDING + finalTime * scaleX;
+            const finalY = CHART_PADDING + height - (finalVisualM * scaleY);
+
+            ctx.lineTo(finalX, finalY);
+            ctx.stroke();
+
+            // Dibujar el punto de crash o cash out si ocurrió
+            if (currentGameData.gameState === 'crashed' || currentGameData.gameState === 'cashed_out') {
+                ctx.beginPath();
+                ctx.arc(finalX, finalY, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = currentGameData.gameState === 'crashed' ? 'var(--danger-red)' : 'var(--accent-green)';
+                ctx.fill();
+            }
+        }
+
+        /**
+         * Inicializa los elementos del DOM y el canvas para el juego.
+         */
+        function initNetrunnerGame() {
+            currentGameData.chartCanvas = document.getElementById('netrunner-chart');
+            if (!currentGameData.chartCanvas) return; 
+
+            currentGameData.ctx = currentGameData.chartCanvas.getContext('2d');
+            
+            // Asignar elementos de UI
+            currentGameData.multiplierDisplay = document.getElementById('multiplier-display');
+            currentGameData.statusDisplay = document.getElementById('status-display');
+            currentGameData.btnStart = document.getElementById('btn-start');
+            currentGameData.btnCashout = document.getElementById('btn-cashout');
+            currentGameData.cashoutMultiplierSpan = document.getElementById('cashout-multiplier');
+
+            // Ajustar el canvas a las dimensiones de su contenedor (AJUSTE DE TAMAÑO)
+            const chartPanel = document.querySelector('.chart-panel');
+            currentGameData.chartCanvas.width = chartPanel.clientWidth;
+            currentGameData.chartCanvas.height = chartPanel.clientHeight;
+            
+            // Event Listeners para actualizar el saldo
+            const nameInput = document.getElementById('netrunner-player-name');
+            const betInput = document.getElementById('bet-input');
+
+            if (nameInput) {
+                nameInput.oninput = () => {
+                    currentGameData.playerName = nameInput.value.trim();
+                    updateBetInput();
+                };
+            }
+            if (betInput) {
+                betInput.oninput = updateBetInput;
+            }
+
+            // Inicializar botones y estado visual
+            setButtons('idle'); 
+            setStatus('Listo para apostar. Introduce tu alias y una cantidad.', 'default');
+            updateBetInput(); 
+            drawGrid(); 
+        }
+
+        // --- 5. RENDERIZADO DE VISTAS (Quiz, Mapa, Juego) ---
+        
+        
+        /**
+         * Función auxiliar para generar el contenido de los nodos del mapa.
+         * Se reintroduce el evento onclick.
+         */
+        function renderTreeNode(node, isRoot = false) {
+            // Clases de Tailwind basadas en el nivel jerárquico (h1, h2, h4)
+            const hLevelClass = isRoot ? 'h1-node' : 
+                               node.hLevel === 'h2' ? 'h2-node' :
+                               node.hLevel === 'h4' ? 'h4-node' : 'default-node';
+            
+            const rootClass = isRoot ? 'root-node' : '';
+            
+            // Añadir click y hover si NO es el nodo raíz
+            const clickHandler = isRoot ? '' : `onclick="setState('detailId', '${node.id}')"`;
+            const cursorClass = isRoot ? 'cursor-default' : 'cursor-pointer hover:scale-[1.05]';
+
+            // El nodo principal del árbol
+            let html = `<li class="tree-node ${rootClass}">`;
+            
+            html += `
+                <div 
+                    class="node-title ${hLevelClass} border-2 ${node.color} text-white shadow-lg ${cursorClass}" 
+                    ${clickHandler}
+                >
+                    <span class="font-bold text-sm">${node.title}</span>
+                </div>
+            `;
+
+            // Si tiene hijos, se renderizan recursivamente
+            if (node.children && node.children.length > 0) {
+                // Margen superior para la rama
+                const ulClass = isRoot ? 'mt-8 root-branch' : 'mt-4';
+                html += `<ul class="${ulClass}">`;
+                node.children.forEach(child => {
+                    html += renderTreeNode(child, false); // Llamada recursiva
+                });
+                html += '</ul>';
+            }
+
+            html += '</li>';
+            return html;
+        }
+
+        /**
+         * [VISTA DETALLE] - Muestra el contenido detallado de un nodo.
+         */
+        function renderDetailPanel() {
+            const constrainedContainer = "max-w-4xl mx-auto p-4 md:p-8 min-h-[calc(100vh-100px)] flex flex-col justify-center";
+            const node = findNodeById(state.detailId, globalStructure);
+
+            if (!node) {
+                return `<div class="${constrainedContainer} text-center"><p class="text-xl text-red-500">Error: No se encontró el nodo.</p><button onclick="setState('detailId', null)" class="mt-4 px-6 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-colors">Volver al Mapa</button></div>`;
+            }
+
+            return `
+                <div class="${constrainedContainer}">
+                    <button 
+                        onclick="setState('detailId', null)" 
+                        class="mb-6 px-4 py-2 bg-gray-700 text-white font-bold rounded-lg hover:bg-gray-600 transition-colors self-start flex items-center"
+                    >
+                        <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i> Volver al Esquema Global
+                    </button>
+                    <div class="p-8 bg-gray-800 rounded-xl shadow-2xl border-4 ${node.color}">
+                        <h2 class="text-4xl font-extrabold text-white mb-4 flex items-center">
+                            ${node.title}
+                        </h2>
+                        <div class="text-lg text-gray-200">
+                            ${node.content}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * [VISTA TRABAJO] - Muestra el Esquema de Árbol Clásico (con el switch para el detalle).
+         */
+        function renderTrabajo() {
+            // Si hay un nodo seleccionado, renderizar el panel de detalle
+            if (state.detailId) {
+                return renderDetailPanel();
+            }
+
+            // Contenedor que cubre el 100% del ancho con padding mínimo
+            const fullWidthContainer = "w-full py-10 px-2";
+
+            // Modo Esquema: Full Width, centrando el contenido del árbol.
+            return `
+                <div class="${fullWidthContainer} min-h-[calc(100vh-100px)]">
+                    <div class="horizontal-tree-wrapper">
+                        <ul class="horizontal-tree">
+                            ${renderTreeNode(globalStructure, true)}
+                        </ul>
+                    </div>
+                    <div class="text-center mt-10">
+                         <p class="text-gray-400 text-lg italic">Haz clic en cualquier nodo para ver el detalle y la explicación.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        /**
+         * Lógica de verificación de respuesta del quiz.
+         */
+        function checkAnswer(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const selectedOption = form.querySelector('input[name="answer"]:checked');
+            const playerName = form.elements['playerName'].value.trim();
+
+            if (!selectedOption) {
+                alert('Por favor, selecciona una opción.');
+                return;
+            }
+
+            if (!playerName) {
+                alert('Por favor, introduce tu Alias.');
+                const nameInput = document.getElementById('quiz-player-name');
+                if (nameInput) {
+                    nameInput.focus();
+                }
+                return;
+            }
+
+            // Si el quiz está completo, forzamos el re-renderizado
+            if (state.quizCompleted) {
+                return renderApp();
+            }
+
+            const currentQuestion = quizData[state.currentQuestionIndex];
+            const isCorrect = parseInt(selectedOption.value) === currentQuestion.correctIndex;
+            
+            const normalizedName = playerName.toLowerCase();
+            const currentScore = getPlayerScore(playerName);
+            
+            let message, scoreChange;
+
+            if (isCorrect) {
+                scoreChange = 10;
+                message = `¡Respuesta CORRECTA! Ganaste ${scoreChange} 💰.`;
+            } else {
+                scoreChange = -5; // Penalización
+                message = `Respuesta INCORRECTA. Pierdes ${Math.abs(scoreChange)} 💀.`;
+            }
+
+            // Actualizar el score
+            state.playerScores[normalizedName] = Math.max(0, currentScore + scoreChange);
+
+            // Renderizar feedback
+            state.feedbackMessage = {
+                type: isCorrect ? 'success' : 'error',
+                text: message
+            };
+
+            // Pasar a la siguiente pregunta
+            state.currentQuestionIndex++;
+
+            // Verificar si terminó el quiz
+            if (state.currentQuestionIndex >= quizData.length) {
+                state.quizCompleted = true;
+                state.currentQuestionIndex = 0; // Reset para posible reintento
+            }
+
+            // Pequeño delay para mostrar el feedback antes de pasar a la siguiente
+            setTimeout(() => {
+                state.feedbackMessage = null;
+                renderApp(); 
+                // Enfocar el input de nombre al avanzar
+                const nameInput = document.getElementById('quiz-player-name');
+                if (nameInput) {
+                    nameInput.focus();
+                }
+            }, 1200);
+
+            renderApp();
+        }
+
+        /**
+         * Renderiza la tabla de puntuaciones.
+         */
+        function renderScoreboard() {
+            const scores = Object.entries(state.playerScores)
+                .map(([name, score]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), score }))
+                .sort((a, b) => b.score - a.score);
+
+            if (scores.length === 0) {
+                return '<p class="text-gray-400 italic">Nadie ha jugado aún.</p>';
+            }
+
+            return `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                    Alias
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                    Monedas 💰
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-gray-800 divide-y divide-gray-700">
+                            ${scores.map(player => `
+                                <tr class="hover:bg-gray-700/50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${player.name}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-yellow-400">${player.score}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        /**
+         * Resetea el estado del quiz (y puntajes).
+         */
+        function resetQuizState() {
+            state.currentQuestionIndex = 0;
+            state.quizCompleted = false;
+            // No reseteamos playerScores ya que son usados por el juego.
+        }
+
+        /**
+         * [VISTA CUESTIONARIO] - Implementa el juego interactivo de preguntas.
+         */
+        function renderExamen() {
+            const constrainedContainer = "max-w-4xl mx-auto p-4 md:p-8";
+
+            // Mensaje de feedback
+            const feedback = state.feedbackMessage ? `
+                <div class="fixed top-20 left-1/2 -translate-x-1/2 p-4 rounded-lg z-50 transition-opacity duration-300
+                    ${state.feedbackMessage.type === 'success' ? 'bg-green-600 text-white shadow-xl' : 'bg-red-600 text-white shadow-xl'}">
+                    ${state.feedbackMessage.text}
+                </div>
+            ` : '';
+
+            const scoreboard = renderScoreboard();
+
+            // Si el quiz está completo, muestra la pantalla final
+            if (state.quizCompleted) {
+                return `
+                    ${feedback}
+                    <div class="${constrainedContainer}">
+                        <h2 class="text-4xl font-extrabold text-white mb-6 border-b-4 border-yellow-400 pb-3"> Cuestionario Finalizado </h2>
+                        <div class="p-6 bg-gray-800 rounded-xl shadow-2xl border border-sky-600">
+                            <p class="text-lg text-gray-300 mb-6">Se han respondido las 20 preguntas. Este es el marcador final:</p>
+                            ${scoreboard}
+                            <button onclick="resetQuizState(); renderApp();" class="mt-6 px-6 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-colors flex items-center mx-auto">
+                                <i data-lucide="rotate-ccw" class="w-5 h-5 mr-2"></i> Reiniciar Cuestionario
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Renderizar la pregunta actual
+            const currentQuestion = quizData[state.currentQuestionIndex];
+            const currentQuestionNumber = state.currentQuestionIndex + 1;
+            const totalQuestions = quizData.length;
+            const playerName = document.getElementById('quiz-player-name') ? document.getElementById('quiz-player-name').value : '';
+
+            return `
+                ${feedback}
+                <div class="${constrainedContainer}">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="flex-grow">
+                            <h2 class="text-4xl font-extrabold text-white mb-6 border-b-4 border-yellow-400 pb-3"> Cuestionario: Sector Secundario </h2>
+                            <div class="mb-6 p-4 bg-gray-800 rounded-lg shadow-xl border border-yellow-500/50">
+                                <p class="text-yellow-400 font-bold mb-2">Puntuación Global</p>
+                                ${scoreboard}
+                            </div>
+                            <div class="p-6 bg-gray-800 rounded-xl shadow-2xl border border-sky-600">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-bold text-sky-400">Pregunta ${currentQuestionNumber} de ${totalQuestions}</h3>
+                                    <p class="text-sm text-gray-400">Monedas: <span class="font-bold text-yellow-400">${getPlayerScore(playerName)}</span> 💰</p>
+                                </div>
+                                <p class="text-2xl font-semibold text-white mb-6">${currentQuestion.question}</p>
+                                <form onsubmit="checkAnswer(event)" class="space-y-4">
+                                    <div class="name-input-group">
+                                        <label for="quiz-player-name" class="block mb-2 text-sm font-medium text-gray-300">Tu Alias:</label>
+                                        <input type="text" id="quiz-player-name" name="playerName" value="${playerName}" placeholder="Introduce tu nombre" required class="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-sky-500 focus:border-sky-500">
+                                    </div>
+                                    <div class="options-group space-y-3">
+                                        ${currentQuestion.options.map((option, index) => `
+                                            <label class="flex items-center p-3 bg-gray-700/70 rounded-lg cursor-pointer hover:bg-gray-600/70 transition-colors shadow-md">
+                                                <input type="radio" name="answer" value="${index}" required class="w-5 h-5 text-sky-500 bg-gray-600 border-gray-500 focus:ring-sky-500">
+                                                <span class="ml-3 text-white">${option}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                    <button type="submit" class="w-full mt-6 px-4 py-3 bg-yellow-500 text-gray-900 font-bold rounded-lg hover:bg-yellow-400 transition-colors flex items-center justify-center">
+                                        <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> Verificar Respuesta
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * [VISTA JUEGO] - Implementa el juego Netrunner Crash.
+         */
+        function renderJuego() {
+            const constrainedContainer = "max-w-6xl mx-auto p-4 md:p-8";
+
+            // Se toma el nombre del input del quiz si existe, si no, se usa el guardado en currentGameData
+            const savedPlayerName = document.getElementById('quiz-player-name')?.value.trim() || currentGameData.playerName;
+
+            return `
+                <div class="${constrainedContainer} min-h-[calc(100vh-100px)] flex flex-col justify-center">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold mb-8 text-center">NETRUNNER CRASH</h1>
+                    <div class="game-container">
+                        
+                        <div class="controls-panel">
+                            <h2 class="text-xl font-bold mb-4 text-center">PANEL DE CONTROL</h2>
+
+                            <div id="balance-display" class="balance-display">
+                                SALDO DISPONIBLE: 0 💰
+                            </div>
+                            
+                            <div id="status-display" class="status-message">
+                                Listo para apostar. Introduce tu alias y una cantidad.
+                            </div>
+
+                            <div class="name-input-group">
+                                <label for="netrunner-player-name">TU ALIAS:</label>
+                                <input type="text" id="netrunner-player-name" placeholder="Escribe tu alias" value="${savedPlayerName}" required>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="bet-input">APUESTA (MONEDAS):</label>
+                                <input type="number" id="bet-input" placeholder="Min. 1" min="1" step="1" required>
+                            </div>
+                            
+                            <button id="btn-start" class="game-button btn-bet mt-4" onclick="startGame()">
+                                <i data-lucide="zap"></i> NETRUN (Apostar)
+                            </button>
+                            
+                            <button id="btn-cashout" class="game-button btn-retire" onclick="cashOut()" disabled>
+                                <i data-lucide="trending-up"></i> RETIRAR @ <span id="cashout-multiplier">1.00x</span>
+                            </button>
+
+                            <p class="text-sm text-gray-400 mt-4 text-center">¡Retira antes del crash para ganar!</p>
+
+                        </div>
+
+                        <div class="chart-panel">
+                            <div id="multiplier-display">1.00x</div>
+                            <canvas id="netrunner-chart"></canvas>
+                            <div class="loading" id="loading-spinner" style="display: none;">Cargando...</div>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 6. RENDERIZADO PRINCIPAL Y NAVIGACIÓN ---
+
+        const views = [
+            { id: 'trabajo', label: 'Mapa Conceptual', icon: 'map' },
+            { id: 'examen', label: 'Cuestionario', icon: 'zap' },
+            { id: 'juego', label: 'Netrunner Crash', icon: 'rocket' }
+        ];
+
+        /**
+         * Renderiza la barra de navegación con botones.
+         */
+        function renderNavigation() {
+            const navButtonsDiv = document.getElementById('nav-buttons');
+            const header = document.querySelector('header');
+
+            header.style.display = 'block'; 
+            
+            if (!navButtonsDiv) return;
+
+            navButtonsDiv.innerHTML = views.map(view => {
+                const isActive = view.id === state.currentView;
+                const activeClasses = isActive ? 'bg-sky-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-sky-500 hover:text-white';
+                
+                return `
+                    <button 
+                        onclick="setState('currentView', '${view.id}')"
+                        class="px-3 py-2 rounded-lg text-sm transition-colors flex items-center ${activeClasses}"
+                        aria-current="${isActive ? 'page' : 'false'}"
+                    >
+                        <i data-lucide="${view.icon}" class="w-5 h-5 mr-1"></i>
+                        <span class="font-semibold">${view.label}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+        
+        /**
+         * Actualiza el estado de la aplicación y vuelve a renderizar.
+         */
+        function setState(key, value) {
+            // Si el usuario cambia de vista, reiniciamos el detalle
+            if (key === 'currentView' && value !== 'trabajo') {
+                state.detailId = null;
+            }
+
+            // Clona el objeto para asegurar que Vue/Reactividad funcione bien si 'value' es un objeto (como playerScores)
+            if (key === 'playerScores') {
+                state[key] = { ...value };
+            } else {
+                state[key] = value;
+            }
+            renderApp();
+        }
+
+
+        /**
+         * Función principal que renderiza la aplicación según el estado actual.
+         */
+        function renderApp() {
+            renderNavigation();
+            let contentHtml = '';
+
+            // Limpiar la clase de juego en el body
+            document.body.className = 'bg-gray-900 text-gray-100 font-sans min-h-screen';
+            
+            // Define el contenido en función de la vista
+            switch (state.currentView) {
+                case 'trabajo':
+                    contentHtml = renderTrabajo();
+                    break;
+                case 'examen':
+                    contentHtml = renderExamen();
+                    break;
+                case 'juego':
+                    contentHtml = renderJuego();
+                    // Añadimos la clase especial al body para el estilo de juego
+                    document.body.className = 'netrunner-bg';
+                    break;
+                default:
+                    // Por defecto, va al mapa si la vista inicial no está definida
+                    contentHtml = renderTrabajo();
+            }
+
+            // 1. Actualizar el contenido principal
+            appContentDiv.innerHTML = contentHtml;
+
+            // 2. Reemplazar iconos de Lucide (necesario después de actualizar el DOM)
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+
+            // 3. Lógica post-renderizado (inicialización del juego o enfoque)
+            if (state.currentView === 'juego') {
+                // Inicializar la lógica del juego (canvas, botones, etc.) después de que el DOM está listo
+                initNetrunnerGame();
+            }
+        }
+
+
+        // Exponer funciones necesarias al ámbito global
+        window.checkAnswer = checkAnswer;
+        window.startGame = startGame;
+        window.cashOut = cashOut;
+        window.updateBetInput = updateBetInput; // Mantener por si acaso
+        window.setState = setState; 
+        window.resetQuizState = resetQuizState; // Mantener para el botón de reinicio del quiz
+
+        // Inicializar la aplicación al cargar la ventana
+        window.onload = renderApp;
+    </script>
+
+</body>
+</html>
